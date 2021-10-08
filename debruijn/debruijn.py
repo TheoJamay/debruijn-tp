@@ -24,13 +24,13 @@ random.seed(9001)
 from random import randint
 import statistics
 
-__author__ = "Your Name"
+__author__ = "Théo Jamay"
 __copyright__ = "Universite Paris Diderot"
-__credits__ = ["Your Name"]
+__credits__ = ["Théo Jamay"]
 __license__ = "GPL"
 __version__ = "1.0.0"
-__maintainer__ = "Your Name"
-__email__ = "your@email.fr"
+__maintainer__ = "Théo Jamay"
+__email__ = "jamay.theo@gmail.com"
 __status__ = "Developpement"
 
 def isfile(path):
@@ -68,11 +68,22 @@ def get_arguments():
 
 
 def read_fastq(fastq_file):
-    pass
+    with open (fastq_file, "r") as fq_file : 
+        for line in fq_file :
+            if line.startswith("@") :
+                i = 0
+            if i == 1 :
+                read = line.split()
+                yield read
+            i += 1
 
 
 def cut_kmer(read, kmer_size):
-    pass
+    n = len(read)
+    kmers = []
+    for i in range(0,n-kmer_size):
+        kmers.append(read[i:i+kmer_size])
+    return kmers
 
 
 def build_kmer_dict(fastq_file, kmer_size):
@@ -162,7 +173,7 @@ def main():
     """
     # Get arguments
     args = get_arguments()
-
+    read_fastq(args.fastq_file)
     # Fonctions de dessin du graphe
     # A decommenter si vous souhaitez visualiser un petit 
     # graphe
