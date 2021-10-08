@@ -69,25 +69,30 @@ def get_arguments():
 
 def read_fastq(fastq_file):
     with open (fastq_file, "r") as fq_file : 
-        for line in fq_file :
-            if line.startswith("@") :
-                i = 0
-            if i == 1 :
-                read = line.split()
-                yield read
-            i += 1
+        text = fq_file.readlines()
+        for i in range(1,len(text),4) :
+            read = text[i].strip()
+            yield read
 
 
 def cut_kmer(read, kmer_size):
-    n = len(read)
-    kmers = []
-    for i in range(0,n-kmer_size):
-        kmers.append(read[i:i+kmer_size])
-    return kmers
+    for r in read :
+        n = len(r)
+        for i in range(0,n-kmer_size):
+            kmers = r[i:i+kmer_size]
+            yield kmers
 
 
 def build_kmer_dict(fastq_file, kmer_size):
-    pass
+    kmer_dict = {}
+    read = read_fastq(fastq_file)
+    kmer = cut_kmer(read, kmer_size)
+    for k in kmer :
+        if k not in kmer_dict :
+            kmer_dict[k] = 1
+        else :
+            kmer_dict[k] += 1
+    return kmer_dict
 
 
 def build_graph(kmer_dict):
@@ -173,7 +178,15 @@ def main():
     """
     # Get arguments
     args = get_arguments()
-    read_fastq(args.fastq_file)
+    #read = read_fastq(args.fastq_file)
+    # for i in read :
+    #     print(i)
+    #kmer = cut_kmer(read,args.kmer_size)
+    # for j in kmer :
+    #     print(j)
+    kmer_dict = build_kmer_dict(args.fastq_file, args.kmer_size)
+    for key in kmer_dict :
+        print(key,kmer_dict[key])
     # Fonctions de dessin du graphe
     # A decommenter si vous souhaitez visualiser un petit 
     # graphe
