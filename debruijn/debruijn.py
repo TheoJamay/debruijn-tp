@@ -71,32 +71,41 @@ def read_fastq(fastq_file):
     with open (fastq_file, "r") as fq_file : 
         text = fq_file.readlines()
         for i in range(1,len(text),4) :
-            read = text[i].strip()
-            yield read
+            yield text[i].strip()
 
 
 def cut_kmer(read, kmer_size):
-    for r in read :
-        n = len(r)
-        for i in range(0,n-kmer_size):
-            kmers = r[i:i+kmer_size]
-            yield kmers
+    n=len(read)
+    for i in range(0,n-(kmer_size-1)):
+        yield read[i:i+kmer_size]
 
 
 def build_kmer_dict(fastq_file, kmer_size):
     kmer_dict = {}
-    read = read_fastq(fastq_file)
-    kmer = cut_kmer(read, kmer_size)
-    for k in kmer :
-        if k not in kmer_dict :
-            kmer_dict[k] = 1
-        else :
-            kmer_dict[k] += 1
+    for read in read_fastq(fastq_file) :
+        for kmer in cut_kmer(read, kmer_size) :
+            if kmer not in kmer_dict :
+                kmer_dict[kmer] = 1
+            else :
+                kmer_dict[kmer] += 1
     return kmer_dict
 
 
 def build_graph(kmer_dict):
-    pass
+    G = nx.DiGraph()
+    #G.add_nodes_from(kmer_dict)
+    i = 0
+    for key in kmer_dict :
+        value2 = key
+        if i == 0 :
+            value1 = key
+        if i == 1 :
+            G.add_edge(value1, value2,weight=kmer_dict[value2])
+            i = 0
+        i += 1
+    #G.add_edge(value1, value2, weight=poids)
+    #nx.add_edge(value1, value2 [, weight] )
+    return(G)
 
 
 def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
@@ -178,15 +187,17 @@ def main():
     """
     # Get arguments
     args = get_arguments()
-    #read = read_fastq(args.fastq_file)
     # for i in read :
     #     print(i)
     #kmer = cut_kmer(read,args.kmer_size)
+    #print(kmer)
     # for j in kmer :
     #     print(j)
+    
     kmer_dict = build_kmer_dict(args.fastq_file, args.kmer_size)
-    for key in kmer_dict :
-        print(key,kmer_dict[key])
+    build_graph(kmer_dict)
+    # for key in kmer_dict :
+    #     print(key,kmer_dict[key])
     # Fonctions de dessin du graphe
     # A decommenter si vous souhaitez visualiser un petit 
     # graphe
