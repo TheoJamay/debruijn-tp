@@ -95,7 +95,6 @@ def build_graph(kmer_dict):
     G = nx.DiGraph()
     #G.add_nodes_from(kmer_dict)
     for key in kmer_dict :
-        print(key[:])
         G.add_edge(key[:-1], key[1:],weight=kmer_dict[key])
     #G.add_edge(value1, value2, weight=poids)
     #nx.add_edge(value1, value2 [, weight] )
@@ -129,17 +128,57 @@ def solve_out_tips(graph, ending_nodes):
     pass
 
 def get_starting_nodes(graph):
-    pass
+    #print(list(graph.nodes))
+    in_nodes = []
+    for node in graph :
+        pred = graph.predecessors(node)
+        #print("check : {}".format(node))
+        #print(len(pred))
+        j = 0
+        for i in pred :
+            j += 1
+            #print(i,end="")
+        #print("\n")
+        if j == 0 :
+            in_nodes.append(node)
+        #print(graph.predecessors(node))
+    #print(graph.nodes[0])
+    #graph.DiGraph.predecessors(n)
+    return(in_nodes)
 
 def get_sink_nodes(graph):
-    pass
+    out_nodes = []
+    for node in graph :
+        suc = graph.successors(node)
+        j = 0
+        for i in suc :
+            j += 1
+        if j == 0 :
+            out_nodes.append(node)
+    return(out_nodes)
 
 def get_contigs(graph, starting_nodes, ending_nodes):
-    pass
+    list_contig = []
+    for i in range(0,len(starting_nodes)) :
+        for j in range(0,len(ending_nodes)) :
+            if nx.has_path(graph, starting_nodes[i], ending_nodes[j]) == True :
+                contig = nx.all_simple_paths(graph, starting_nodes[i], ending_nodes[j])
+                for c in contig :
+                    seq = c[0]
+                    for nucl in range(1,len(c)) :
+                        seq += c[nucl][-1]
+                t = (seq, len(seq))
+                list_contig.append(t)
+    return(list_contig)
+
 
 def save_contigs(contigs_list, output_file):
-    pass
-
+    with open(output_file,"w") as out_file :
+        for cont in range(0,len(contigs_list)) :
+            out_file.write(">contig_{} len={}\n".format(cont, contigs_list[cont][1]))
+            text = fill(contigs_list[cont][0])
+            out_file.write("{}\n".format(text))
+        
 
 def fill(text, width=80):
     """Split text with a line return to respect fasta format"""
@@ -189,7 +228,12 @@ def main():
     #     print(j)
     
     kmer_dict = build_kmer_dict(args.fastq_file, args.kmer_size)
-    build_graph(kmer_dict)
+    graph = build_graph(kmer_dict)
+    starting_nodes = get_starting_nodes(graph)
+    ending_nodes = get_sink_nodes(graph)
+    contigs_list = get_contigs(graph, starting_nodes, ending_nodes)
+    output_file = "contig.fasta"
+    save_contigs(contigs_list, output_file)
     # for key in kmer_dict :
     #     print(key,kmer_dict[key])
     # Fonctions de dessin du graphe
