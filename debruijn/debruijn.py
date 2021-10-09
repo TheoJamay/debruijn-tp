@@ -94,15 +94,9 @@ def build_kmer_dict(fastq_file, kmer_size):
 def build_graph(kmer_dict):
     G = nx.DiGraph()
     #G.add_nodes_from(kmer_dict)
-    i = 0
     for key in kmer_dict :
-        value2 = key
-        if i == 0 :
-            value1 = key
-        if i == 1 :
-            G.add_edge(value1, value2,weight=kmer_dict[value2])
-            i = 0
-        i += 1
+        print(key[:])
+        G.add_edge(key[:-1], key[1:],weight=kmer_dict[key])
     #G.add_edge(value1, value2, weight=poids)
     #nx.add_edge(value1, value2 [, weight] )
     return(G)
