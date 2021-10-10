@@ -102,24 +102,59 @@ def build_graph(kmer_dict):
 
 
 def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
-    pass
+    for path in path_list :
+        graph.remove_nodes_from(path)
 
 def std(data):
-    pass
+    return round(statistics.stdev(data),1)
 
 
 def select_best_path(graph, path_list, path_length, weight_avg_list, 
                      delete_entry_node=False, delete_sink_node=False):
-    pass
+    if std(weight_avg_list) > 0 :
+        return(max(weight_avg_list))
+    if std(path_length) > 0 :
+        return(max(path_length))
+
+
+
 
 def path_average_weight(graph, path):
-    pass
+    #graph.subgraph(path).edges(data=True)
+    weight = statistics.mean([d["weight"] for (u, v, d) in graph.subgraph(path).edges(data=True)])
+    return weight
+
 
 def solve_bubble(graph, ancestor_node, descendant_node):
-    pass
+    weight_avg_list = []
+    path_length = []
+    path_list = nx.all_simple_paths(graph,source = ancestor_node,target = descendant_node)
+    for p in path_list :
+        weight = path_average_weight(graph, p)
+        weight_avg_list.append(weight)
+        path_length.append(len(p))     
+    opti_path = select_best_path(graph, path_list, path_length, weight_avg_list, 
+                     delete_entry_node=False, delete_sink_node=False)
+    
+    
 
 def simplify_bubbles(graph):
-    pass
+    bubble = False
+    for node in graph :
+        pred_list = []
+        pred = graph.predecessors(node)
+        for p in pred :
+            pred_list.append(p)
+        if len(pred_list) > 1 :
+            for i in range(0,len(pred_list)) :
+                for j in range(i+1,len(pred_list)) :
+                    noeud_ancêtre = nx.lowest_common_ancestor(graph, pred_list[i], pred_list[j])
+                    if noeud_ancêtre != None :
+                        bubble = True
+                        break
+                if bubble:                
+                    graphe = simplify_bubbles(solve_bubble(graph, noeud_ancêtre, node))
+
 
 def solve_entry_tips(graph, starting_nodes):
     pass
@@ -229,11 +264,26 @@ def main():
     
     kmer_dict = build_kmer_dict(args.fastq_file, args.kmer_size)
     graph = build_graph(kmer_dict)
-    starting_nodes = get_starting_nodes(graph)
-    ending_nodes = get_sink_nodes(graph)
-    contigs_list = get_contigs(graph, starting_nodes, ending_nodes)
-    output_file = "contig.fasta"
-    save_contigs(contigs_list, output_file)
+    #starting_nodes = get_starting_nodes(graph)
+    #ending_nodes = get_sink_nodes(graph)
+    #contigs_list = get_contigs(graph, starting_nodes, ending_nodes)
+    #output_file = "contig.fasta"
+    #save_contigs(contigs_list, output_file)
+    # for u,v in graph.edges() :
+    #     allpath = nx.all_simple_paths(graph,u,v)
+    #     for p in allpath :
+    #         if len(p) > 2 :
+    #             print(p)
+    # for i in starting_nodes :
+    #     for j in ending_nodes :
+    #         path_list = nx.all_simple_paths(graph,source = i,target = j)
+    #         for p in path_list :
+    #             path_average_weight(graph, p)
+    #         remove_paths(graph, path_list, True, True)
+    simplify_bubbles(graph)
+    #nx.all_simple_paths.statistics.mean([d["weight"] for (u, v, d) in graph.subgraph(path).edges(data=True)])
+
+    #path_average_weight(graph, path)
     # for key in kmer_dict :
     #     print(key,kmer_dict[key])
     # Fonctions de dessin du graphe
