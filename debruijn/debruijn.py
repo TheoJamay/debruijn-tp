@@ -103,7 +103,14 @@ def build_graph(kmer_dict):
 
 def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
     for path in path_list :
-        graph.remove_nodes_from(path)
+        if delete_entry_node == False and delete_sink_node == False :
+            graph.remove_nodes_from(path[1:-1])            
+        elif delete_entry_node == False :
+            graph.remove_nodes_from(path[1:])
+        elif delete_sink_node == False :
+            graph.remove_nodes_from(path[:-1])
+        else :
+            graph.remove_nodes_from(path)
     return graph
 
 
@@ -114,35 +121,14 @@ def std(data):
 def select_best_path(graph, path_list, path_length, weight_avg_list, 
                      delete_entry_node=False, delete_sink_node=False):
     if std(weight_avg_list) > 0 :
-        for i in range(0, len(path_list)) :
-            if i != weight_avg_list.index(max(weight_avg_list)) :
-                if delete_entry_node == False and delete_sink_node == False :
-                    path_mod = path_list[i][1:-1]            
-                elif delete_entry_node == False :
-                    path_mod = path_list[i][1:]
-                elif delete_sink_node == False :
-                    path_mod = path_list[i][:-1]
-                graph.remove_nodes_from(path_mod)
+        del path_list[weight_avg_list.index(max(weight_avg_list))]
+        graph = remove_paths(graph, path_list, delete_entry_node, delete_sink_node)
     elif std(path_length) > 0 :
-        for i in range(0, len(path_list)) :
-            if i != path_length.index(max(path_length)) :
-                if delete_entry_node == False and delete_sink_node == False :
-                    path_mod = path_list[i][1:-1]            
-                elif delete_entry_node == False :
-                    path_mod = path_list[i][1:]
-                elif delete_sink_node == False :
-                    path_mod = path_list[i][:-1]
-                graph.remove_nodes_from(path_mod)
-    else : 
-        for i in range(0, len(path_list)) :
-            if i != path_list.index(max(path_list)) :
-                if delete_entry_node == False and delete_sink_node == False :
-                    path_mod = path_list[i][1:-1]            
-                elif delete_entry_node == False :
-                    path_mod = path_list[i][1:]
-                elif delete_sink_node == False :
-                    path_mod = path_list[i][:-1]
-                graph.remove_nodes_from(path_mod)
+        del path_list[path_length.index(max(path_length))]
+        graph = remove_paths(graph, path_list, delete_entry_node, delete_sink_node)
+    else :
+        del path_list[random.randint(0,len(weight_avg_list))]
+        graph = remove_paths(graph, path_list, delete_entry_node, delete_sink_node)
     return graph
     
 
@@ -192,7 +178,39 @@ def simplify_bubbles(graph):
 
 
 def solve_entry_tips(graph, starting_nodes):
-    pass
+    weight_avg_list = []
+    path_length = []
+    tips = False
+    for node in graph :
+        if node in graph :
+            pred_list = []
+            pred = graph.predecessors(node)
+            for p in pred :
+                pred_list.append(p)
+            if len(pred_list) == 2 :
+                if pred_list[0] in starting_nodes and pred_list[1] in starting_nodes :
+                    path_list = []
+                    path_list_tmp = nx.all_simple_paths(graph,source = pred_list[0],target = node)
+                    for p1 in path_list_tmp :
+                        path_list.append(p1)
+                        weight = path_average_weight(graph, p1)
+                        weight_avg_list.append(weight)
+                        path_length.append(len(p1))
+                    path_list_tmp = nx.all_simple_paths(graph,source = pred_list[1],target = node)
+                    for p2 in path_list_tmp :
+                        path_list.append(p2)
+                        weight = path_average_weight(graph, p2)
+                        weight_avg_list.append(weight)
+                        path_length.append(len(p2))
+                    tips = True
+                    break
+            if tips :
+                break
+    if tips :
+        graph = solve_entry_tips(select_best_path(graph, path_list, path_length, weight_avg_list, 
+                                    True, False), starting_nodes)
+    return graph
+                         
 
 def solve_out_tips(graph, ending_nodes):
     pass
@@ -299,8 +317,8 @@ def main():
     
     kmer_dict = build_kmer_dict(args.fastq_file, args.kmer_size)
     graph = build_graph(kmer_dict)
-    #starting_nodes = get_starting_nodes(graph)
-    #ending_nodes = get_sink_nodes(graph)
+    starting_nodes = get_starting_nodes(graph)
+    ending_nodes = get_sink_nodes(graph)
     #contigs_list = get_contigs(graph, starting_nodes, ending_nodes)
     #output_file = "contig.fasta"
     #save_contigs(contigs_list, output_file)
@@ -316,6 +334,7 @@ def main():
     #             path_average_weight(graph, p)
     #         remove_paths(graph, path_list, True, True)
     graph = simplify_bubbles(graph)
+    solve_entry_tips(graph, starting_nodes)
     #nx.all_simple_paths.statistics.mean([d["weight"] for (u, v, d) in graph.subgraph(path).edges(data=True)])
 
     #path_average_weight(graph, path)
