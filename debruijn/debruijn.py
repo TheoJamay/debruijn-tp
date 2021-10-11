@@ -178,8 +178,6 @@ def simplify_bubbles(graph):
 
 
 def solve_entry_tips(graph, starting_nodes):
-    weight_avg_list = []
-    path_length = []
     tips = False
     for node in graph :
         if node in graph :
@@ -188,22 +186,22 @@ def solve_entry_tips(graph, starting_nodes):
             for p in pred :
                 pred_list.append(p)
             if len(pred_list) == 2 :
-                if pred_list[0] in starting_nodes and pred_list[1] in starting_nodes :
-                    path_list = []
-                    path_list_tmp = nx.all_simple_paths(graph,source = pred_list[0],target = node)
-                    for p1 in path_list_tmp :
-                        path_list.append(p1)
-                        weight = path_average_weight(graph, p1)
-                        weight_avg_list.append(weight)
-                        path_length.append(len(p1))
-                    path_list_tmp = nx.all_simple_paths(graph,source = pred_list[1],target = node)
-                    for p2 in path_list_tmp :
-                        path_list.append(p2)
-                        weight = path_average_weight(graph, p2)
-                        weight_avg_list.append(weight)
-                        path_length.append(len(p2))
-                    tips = True
-                    break
+                flag = 0
+                path_list = []
+                weight_avg_list = []
+                path_length = []
+                for in_node in starting_nodes :
+                    way = nx.all_simple_paths(graph,source = in_node,target = node)
+                    if way != None :
+                        flag += 1
+                        for p in way :
+                            path_list.append(p)
+                            weight = path_average_weight(graph, p)
+                            weight_avg_list.append(weight)
+                            path_length.append(len(p))
+                    if flag == 2 :
+                        tips = True
+                        break
             if tips :
                 break
     if tips :
@@ -213,7 +211,36 @@ def solve_entry_tips(graph, starting_nodes):
                          
 
 def solve_out_tips(graph, ending_nodes):
-    pass
+    tips = False
+    for node in graph :
+        if node in graph :
+            succ_list = []
+            succ = graph.successors(node)
+            for s in succ :
+                succ_list.append(s)
+            if len(succ_list) == 2 :
+                flag = 0
+                path_list = []
+                weight_avg_list = []
+                path_length = []
+                for out_node in ending_nodes :
+                    way = nx.all_simple_paths(graph,source=node,target = out_node)
+                    if way != None :
+                        flag += 1
+                        for p in way :
+                            path_list.append(p)
+                            weight = path_average_weight(graph, p)
+                            weight_avg_list.append(weight)
+                            path_length.append(len(p))
+                    if flag == 2 :
+                        tips = True
+                        break
+            if tips :
+                break
+    if tips :
+        graph = solve_entry_tips(select_best_path(graph, path_list, path_length, weight_avg_list, 
+                                    False, True), ending_nodes)
+    return graph
 
 def get_starting_nodes(graph):
     #print(list(graph.nodes))
@@ -334,7 +361,8 @@ def main():
     #             path_average_weight(graph, p)
     #         remove_paths(graph, path_list, True, True)
     graph = simplify_bubbles(graph)
-    solve_entry_tips(graph, starting_nodes)
+    graph = solve_entry_tips(graph, starting_nodes)
+    graph = solve_out_tips(graph, ending_nodes)
     #nx.all_simple_paths.statistics.mean([d["weight"] for (u, v, d) in graph.subgraph(path).edges(data=True)])
 
     #path_average_weight(graph, path)
